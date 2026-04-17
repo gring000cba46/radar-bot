@@ -39,7 +39,7 @@ def main():
         print("⚠️ Por favor configura TELEGRAM_TOKEN en tu archivo .env")
         return
 
-    logger.info(f"✅ Token: {token[:20]}...")
+    logger.info("✅ Token cargado correctamente")
 
     # Inicializar base de datos
     init_db()

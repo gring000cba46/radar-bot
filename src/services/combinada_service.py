@@ -57,6 +57,10 @@ class CombinadaService:
                 resultado='PENDIENTE',
             )
             db.add(combinada)
+
+            # Descontar monto del bank al confirmar la apuesta
+            usuario.bank_actual = round(usuario.bank_actual - monto, 2)
+
             db.commit()
             db.refresh(combinada)
 
@@ -86,9 +90,11 @@ class CombinadaService:
             if resultado == 'GANADA':
                 ganancia = round(combinada.monto * (combinada.cuota_total - 1), 2)
                 combinada.ganancia = ganancia
+                # El monto ya fue descontado al crear; devolvemos stake + ganancia
                 usuario.bank_actual = round(usuario.bank_actual + combinada.monto + ganancia, 2)
                 usuario.apuestas_ganadas += 1
             else:
+                # El monto ya fue descontado al crear; solo registramos la pérdida
                 combinada.ganancia = -combinada.monto
 
             usuario.apuestas_totales += 1

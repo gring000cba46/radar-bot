@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class UsuarioService:
 
     @staticmethod
-    def obtener_o_crear(telegram_id: str, nombre: str, bank_inicial: float = 1000.0) -> Usuario:
+    def obtener_o_crear(telegram_id: str, nombre: str, bank_inicial: float = 1000.0) -> dict:
         """Obtiene un usuario existente o crea uno nuevo."""
         db = SessionLocal()
         try:
@@ -21,19 +21,25 @@ class UsuarioService:
             ).first()
 
             if not usuario:
-                usuario = Usuario(
-                    telegram_id=str(telegram_id),
-                    nombre=nombre,
-                    bank_inicial=bank_inicial,
-                    bank_actual=bank_inicial,
-                    roi=0.0,
-                    apuestas_totales=0,
-                    apuestas_ganadas=0,
-                )
-                db.add(usuario)
-                db.commit()
-                db.refresh(usuario)
-                logger.info(f"✅ Usuario creado: {telegram_id} ({nombre})")
+                try:
+                    usuario = Usuario(
+                        telegram_id=str(telegram_id),
+                        nombre=nombre,
+                        bank_inicial=bank_inicial,
+                        bank_actual=bank_inicial,
+                        roi=0.0,
+                        apuestas_totales=0,
+                        apuestas_ganadas=0,
+                    )
+                    db.add(usuario)
+                    db.commit()
+                    db.refresh(usuario)
+                    logger.info(f"✅ Usuario creado: {telegram_id} ({nombre})")
+                except Exception:
+                    db.rollback()
+                    usuario = db.query(Usuario).filter(
+                        Usuario.telegram_id == str(telegram_id)
+                    ).first()
             else:
                 # Actualizar nombre si cambió
                 if usuario.nombre != nombre:

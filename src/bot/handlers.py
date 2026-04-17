@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 ARG_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
 
+# Porcentaje del bank que se apuesta por defecto en cada combinada
+DEFAULT_BET_PCT = 0.05
+
 # ---------------------------------------------------------------------------
 # Picks de demostración
 # En producción estos vendrían de la API / algoritmo real.
@@ -440,9 +443,12 @@ class BotHandlers:
             if c['ganancia'] is not None:
                 gan_str = f"+${c['ganancia']:.2f}" if c['ganancia'] >= 0 else f"${c['ganancia']:.2f}"
             fecha_str = c.get('finalizado') or c['creado']
-            picks_resumen = ', '.join(
-                p['partido'] for p in c['picks_data']
-            ) if c['picks_data'] else '—'
+            picks_data = c['picks_data'] or []
+            picks_nombres = [p['partido'] for p in picks_data[:2]]
+            picks_resumen = ', '.join(picks_nombres)
+            if len(picks_data) > 2:
+                picks_resumen += f', +{len(picks_data) - 2} más'
+            picks_resumen = picks_resumen or '—'
             lines.append(
                 f"{res_emoji} *#{c['id']}* — {fecha_str}\n"
                 f"Picks: {picks_resumen}\n"
@@ -582,7 +588,7 @@ class BotHandlers:
                 datos_usuario = usuario_service.obtener_o_crear(str(user.id), user.first_name)
 
             # Monto por defecto: 5% del bank actual
-            monto = round(datos_usuario['bank_actual'] * 0.05, 2)
+            monto = round(datos_usuario['bank_actual'] * DEFAULT_BET_PCT, 2)
 
             combinada = combinada_service.crear(str(user.id), seleccion, monto)
 
@@ -651,7 +657,7 @@ class BotHandlers:
 
         db = SessionLocal()
         try:
-            usuarios = db.query(UsuarioModel).filter(UsuarioModel.activo == True).all()
+            usuarios = db.query(UsuarioModel).filter(UsuarioModel.activo.is_(True)).all()
             telegram_ids = [u.telegram_id for u in usuarios]
         finally:
             db.close()
