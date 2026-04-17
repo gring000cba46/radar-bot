@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Maestro - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <h1>📊 Radar Maestro</h1>
+                <p>Análisis Inteligente de Cuotas Deportivas</p>
+            </div>
+            <div class="navbar-menu">
+                <a href="#dashboard">Dashboard</a>
+                <a href="#picks">Picks</a>
+                <a href="#algoritmo">Algoritmo</a>
+                <a href="#analytics">Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container main-content">
+        
+        <!-- Stats Cards -->
+        <section class="stats-grid" id="dashboard">
+            <h2>📈 Estadísticas Generales</h2>
+            
+            <div class="stat-card green">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <div class="stat-label">Suscriptores</div>
+                    <div class="stat-value">156</div>
+                    <div class="stat-change">+12 esta semana</div>
+                </div>
+            </div>
+
+            <div class="stat-card blue">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-content">
+                    <div class="stat-label">Picks Hoy</div>
+                    <div class="stat-value">12</div>
+                    <div class="stat-change">8 con valor detectado</div>
+                </div>
+            </div>
+
+            <div class="stat-card purple">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <div class="stat-label">ROI Promedio</div>
+                    <div class="stat-value">+15.5%</div>
+                    <div class="stat-change">Yield: +2.3%</div>
+                </div>
+            </div>
+
+            <div class="stat-card orange">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-label">Tasa Acierto</div>
+                    <div class="stat-value">62.5%</div>
+                    <div class="stat-change">24 apuestas hoy</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <h3>📊 ROI por Día (Últimos 30 días)</h3>
+                <div id="roi-chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h3>🎯 Tasa de Acierto por Liga</h3>
+                <div id="accuracy-chart"></div>
+            </div>
+        </section>
+
+        <!-- Picks Section -->
+        <section class="picks-section" id="picks">
+            <h2>🎯 Picks Disponibles</h2>
+            
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterPicks('all')">Todos</button>
+                <button class="filter-btn" onclick="filterPicks('futbol')">⚽ Fútbol</button>
+                <button class="filter-btn" onclick="filterPicks('tenis')">🎾 Tenis</button>
+                <button class="filter-btn" onclick="filterPicks('basquet')">🏀 Basquet</button>
+                <button class="filter-btn" onclick="filterPicks('valor')">💎 Con Valor</button>
+            </div>
+
+            <div class="picks-grid">
+                <div class="pick-card strong">
+                    <div class="pick-header">
+                        <span class="pick-liga">La Liga</span>
+                        <span class="pick-confidence">FUERTE</span>
+                    </div>
+                    <div class="pick-body">
+                        <h4>Real Madrid vs Barcelona</h4>
+                        <p class="pick-mercado">Gana Local</p>
+                        <div class="pick-stats">
+                            <div class="stat">
+                                <span class="label">Cuota:</span>
+                                <span class="value">2.10</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Valor:</span>
+                                <span class="value positive">+3.2%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">EV:</span>
+                                <span class="value positive">+0.21</span>
+                            </div>
+                        </div>
+                        <p class="pick-analysis">Probabilidad real 50% vs implícita 47.6%</p>
+                    </div>
+                    <button class="pick-btn">Apostar</button>
+                </div>
+
+                <div class="pick-card medium">
+                    <div class="pick-header">
+                        <span class="pick-liga">Premier</span>
+                        <span class="pick-confidence">MEDIA</span>
+                    </div>
+                    <div class="pick-body">
+                        <h4>Man City vs Liverpool</h4>
+                        <p class="pick-mercado">Ambos Anotan</p>
+                        <div class="pick-stats">
+                            <div class="stat">
+                                <span class="label">Cuota:</span>
+                                <span class="value">1.85</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Valor:</span>
+                                <span class="value positive">+1.8%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">EV:</span>
+                                <span class="value positive">+0.15</span>
+                            </div>
+                        </div>
+                        <p class="pick-analysis">Historial de 4 años en esta matchup</p>
+                    </div>
+                    <button class="pick-btn">Apostar</button>
+                </div>
+
+                <div class="pick-card weak">
+                    <div class="pick-header">
+                        <span class="pick-liga">ATP</span>
+                        <span class="pick-confidence">DÉBIL</span>
+                    </div>
+                    <div class="pick-body">
+                        <h4>Djokovic vs Alcaraz</h4>
+                        <p class="pick-mercado">Gana Djokovic</p>
+                        <div class="pick-stats">
+                            <div class="stat">
+                                <span class="label">Cuota:</span>
+                                <span class="value">1.95</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Valor:</span>
+                                <span class="value positive">+0.5%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">EV:</span>
+                                <span class="value positive">+0.01</span>
+                            </div>
+                        </div>
+                        <p class="pick-analysis">Valor marginal, solo si quieres jugar</p>
+                    </div>
+                    <button class="pick-btn">Apostar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Algoritmo Performance -->
+        <section class="algoritmo-section" id="algoritmo">
+            <h2>🤖 Rendimiento del Algoritmo</h2>
+            
+            <div class="algo-stats">
+                <div class="algo-card">
+                    <h4>Predicciones Totales</h4>
+                    <p class="big-number">324</p>
+                </div>
+                <div class="algo-card">
+                    <h4>Aciertos</h4>
+                    <p class="big-number green-text">201 (62%)</p>
+                </div>
+                <div class="algo-card">
+                    <h4>Fallos</h4>
+                    <p class="big-number red-text">123 (38%)</p>
+                </div>
+                <div class="algo-card">
+                    <h4>ROI Generado</h4>
+                    <p class="big-number green-text">+18.5%</p>
+                </div>
+                <div class="algo-card">
+                    <h4>Confianza Promedio</h4>
+                    <p class="big-number">72%</p>
+                </div>
+                <div class="algo-card">
+                    <h4>Picks Con Valor</h4>
+                    <p class="big-number">89 detectados</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics -->
+        <section class="analytics-section" id="analytics">
+            <h2>📊 Analytics</h2>
+            
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3>Preferencias de Ligas</h3>
+                    <div id="ligas-chart"></div>
+                </div>
+                
+                <div class="analytics-card">
+                    <h3>Distribución por Plan</h3>
+                    <div id="plan-chart"></div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Radar Maestro - Bot de Análisis de Cuotas Deportivas</p>
+            <p>Desarrollado con ❤️ para apostadores inteligentes</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
