@@ -6,16 +6,18 @@ import logging
 import os
 import sys
 from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 # Cargar variables de entorno
 load_dotenv()
 
 # Importar handlers
-sys.path.insert(0, os.path.dirname(__file__))
-from handlers import BotHandlers
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from src.bot.handlers import BotHandlers
+from src.models.database import init_db
 
 # Configurar logging
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
@@ -29,38 +31,52 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Punto de entrada del bot"""
-    
-    # Obtener token
+
     token = os.getenv('TELEGRAM_TOKEN')
-    
+
     if not token:
         logger.error("❌ ERROR: TELEGRAM_TOKEN no configurado en .env")
         print("⚠️ Por favor configura TELEGRAM_TOKEN en tu archivo .env")
         return
-    
-    logger.info("🚀 Iniciando Radar Maestro Bot...")
-    
-    # Crear aplicación
+
+    logger.info(f"✅ Token: {token[:20]}...")
+
+    # Inicializar base de datos
+    init_db()
+
+    logger.info("✅ Bot ready")
+
+    # Crear aplicación con job queue habilitado
     app = Application.builder().token(token).build()
-    
-    # Registrar handlers de comandos
+
+    # ---- Comandos ----
     app.add_handler(CommandHandler("start", BotHandlers.cmd_start))
     app.add_handler(CommandHandler("picks", BotHandlers.cmd_picks))
     app.add_handler(CommandHandler("valor", BotHandlers.cmd_valor))
-    app.add_handler(CommandHandler("rendimiento", BotHandlers.cmd_rendimiento))
     app.add_handler(CommandHandler("bank", BotHandlers.cmd_bank))
+    app.add_handler(CommandHandler("historial", BotHandlers.cmd_historial))
+    app.add_handler(CommandHandler("combinada", BotHandlers.cmd_ver_combinada))
     app.add_handler(CommandHandler("ayuda", BotHandlers.cmd_ayuda))
-    
-    # Registrar handler de callbacks
+
+    # ---- Callbacks de botones inline ----
     app.add_handler(CallbackQueryHandler(BotHandlers.button_callback))
-    
-    # Iniciar bot
-    logger.info("✅ Bot iniciado correctamente")
-    logger.info("⏳ Esperando mensajes...")
-    
+
+    # ---- Job queue: alerta 30 min antes de partidos con valor ----
+    job_queue = app.job_queue
+    if job_queue:
+        job_queue.run_repeating(
+            BotHandlers.job_alertas_30min,
+            interval=60,   # cada 60 segundos
+            first=10,
+            name='alertas_30min',
+        )
+        logger.info("✅ Job de alertas 30min registrado")
+
+    logger.info("⏳ Polling...")
+
     app.run_polling(
         allowed_updates=['message', 'callback_query'],
-        drop_pending_updates=True
+        drop_pending_updates=True,
     )
 
 
