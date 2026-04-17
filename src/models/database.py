@@ -1,155 +1,114 @@
 """
-Modelos de base de datos SQLAlchemy
-Define estructura de tablas
+Modelos de base de datos con SQLAlchemy
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
 import os
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-# Crear base
-Base = declarative_base()
-
-# Configurar engine
+# Configurar base de datos
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/radar_bot.db')
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if 'sqlite' in DATABASE_URL else {})
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 
 class Usuario(Base):
-    """Modelo de usuario/suscriptor"""
+    """Modelo de usuario"""
     __tablename__ = "usuarios"
     
     id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(Integer, unique=True, index=True)
+    telegram_id = Column(String, unique=True, index=True)
     nombre = Column(String)
-    email = Column(String, unique=True, index=True)
     saldo = Column(Float, default=1000.0)
-    roi = Column(Float, default=0.0)
-    creado_en = Column(DateTime, default=datetime.utcnow)
+    saldo_inicial = Column(Float, default=1000.0)
+    plan = Column(String, default="gratis")
     activo = Column(Boolean, default=True)
-    
-    # Relaciones
-    apuestas = relationship("Apuesta", back_populates="usuario")
-    bank_movimientos = relationship("BankMovimiento", back_populates="usuario")
-
-
-class Partido(Base):
-    """Modelo de partido deportivo"""
-    __tablename__ = "partidos"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    partido_id = Column(String, unique=True, index=True)
-    deporte = Column(String)  # Fútbol, Tenis, Basquet
-    liga = Column(String)
-    local = Column(String)
-    visitante = Column(String)
-    fecha = Column(DateTime, index=True)
-    estado = Column(String, default='pendiente')  # pendiente, en_vivo, finalizado
-    resultado = Column(String, nullable=True)  # 1, X, 2
-    creado_en = Column(DateTime, default=datetime.utcnow)
-    
-    # Relaciones
-    cuotas = relationship("CuotaMercado", back_populates="partido")
-    picks = relationship("Pick", back_populates="partido")
-
-
-class CuotaMercado(Base):
-    """Modelo de cuota en mercado específico"""
-    __tablename__ = "cuotas_mercado"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    partido_id = Column(Integer, ForeignKey("partidos.id"), index=True)
-    mercado = Column(String)  # 1, X, 2, Over/Under, Handicap
-    cuota = Column(Float)
-    probabilidad_implicita = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    # Relación
-    partido = relationship("Partido", back_populates="cuotas")
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
+    ultima_actividad = Column(DateTime, default=datetime.utcnow)
 
 
 class Pick(Base):
-    """Modelo de análisis/pick"""
+    """Modelo de pick (recomendación)"""
     __tablename__ = "picks"
     
     id = Column(Integer, primary_key=True, index=True)
-    partido_id = Column(Integer, ForeignKey("partidos.id"), index=True)
+    partido = Column(String)
+    liga = Column(String)
     mercado = Column(String)
+    cuota = Column(Float)
     probabilidad_real = Column(Float)
     probabilidad_implicita = Column(Float)
-    valor_detectado = Column(Float)  # Porcentaje de valor
+    valor = Column(String)
+    confianza = Column(Float)
     expected_value = Column(Float)
-    recomendacion = Column(String)  # FUERTE, MEDIA, DÉBIL
-    confianza = Column(Float, default=0.0)  # 0-1
-    creado_en = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    # Relación
-    partido = relationship("Partido", back_populates="picks")
+    resultado = Column(String, nullable=True)  # GANADO, PERDIDO, PENDIENTE
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_resultado = Column(DateTime, nullable=True)
 
 
 class Apuesta(Base):
-    """Modelo de apuesta registrada"""
+    """Modelo de apuesta del usuario"""
     __tablename__ = "apuestas"
     
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
-    partido_id = Column(Integer, ForeignKey("partidos.id"), nullable=True)
+    usuario_id = Column(Integer, index=True)
+    pick_id = Column(Integer, nullable=True)
+    partido = Column(String)
     mercado = Column(String)
     monto = Column(Float)
     cuota = Column(Float)
-    resultado = Column(Boolean, nullable=True)  # True=ganó, False=perdió, None=pendiente
-    ganancia = Column(Float, nullable=True)
-    creada_en = Column(DateTime, default=datetime.utcnow, index=True)
-    resuelta_en = Column(DateTime, nullable=True)
-    
-    # Relación
-    usuario = relationship("Usuario", back_populates="apuestas")
+    ganada = Column(Boolean, nullable=True)
+    ganancia = Column(Float, default=0)
+    fecha_apuesta = Column(DateTime, default=datetime.utcnow)
+    fecha_resultado = Column(DateTime, nullable=True)
 
 
-class BankMovimiento(Base):
+class Movimiento(Base):
     """Modelo de movimiento de bankroll"""
-    __tablename__ = "bank_movimientos"
+    __tablename__ = "movimientos"
     
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
-    tipo = Column(String)  # apuesta, ganancia, recarga
+    usuario_id = Column(Integer, index=True)
+    tipo = Column(String)  # APUESTA, RECARGA, RETIRO
     monto = Column(Float)
-    saldo_antes = Column(Float)
-    saldo_despues = Column(Float)
-    descripcion = Column(String, nullable=True)
-    creado_en = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    # Relación
-    usuario = relationship("Usuario", back_populates="bank_movimientos")
+    saldo_anterior = Column(Float)
+    saldo_nuevo = Column(Float)
+    descripcion = Column(String)
+    fecha = Column(DateTime, default=datetime.utcnow)
 
 
-class Analytics(Base):
-    """Modelo de estadísticas y analítica"""
-    __tablename__ = "analytics"
+class Estadistica(Base):
+    """Modelo de estadísticas diarias"""
+    __tablename__ = "estadisticas"
     
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True, nullable=True)
-    fecha = Column(DateTime, index=True)
-    suscriptores_total = Column(Integer, default=0)
-    picks_generados = Column(Integer, default=0)
-    picks_con_valor = Column(Integer, default=0)
-    apuestas_realizadas = Column(Integer, default=0)
-    apuestas_ganadas = Column(Integer, default=0)
-    roi_promedio = Column(Float, default=0.0)
-    yield_promedio = Column(Float, default=0.0)
-    metadata = Column(JSON, nullable=True)
-    
-    creado_en = Column(DateTime, default=datetime.utcnow, index=True)
+    fecha = Column(String, unique=True)
+    total_usuarios = Column(Integer)
+    usuarios_activos = Column(Integer)
+    picks_generados = Column(Integer)
+    picks_con_valor = Column(Integer)
+    total_apuestas = Column(Integer)
+    apuestas_ganadas = Column(Integer)
+    roi_promedio = Column(Float)
+    yield_promedio = Column(Float)
 
 
-# Crear todas las tablas
 def init_db():
     """Inicializa la base de datos"""
+    # Crear directorio si no existe
+    os.makedirs('data', exist_ok=True)
+    
+    # Crear todas las tablas
     Base.metadata.create_all(bind=engine)
-    print("✅ Base de datos inicializada")
+    print("✅ Base de datos inicializada correctamente")
 
 
 def get_db():
