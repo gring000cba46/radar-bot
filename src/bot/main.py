@@ -6,16 +6,23 @@ import logging
 import os
 import sys
 from dotenv import load_dotenv
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 
-# Cargar variables de entorno
 load_dotenv()
 
-# Importar handlers
-sys.path.insert(0, os.path.dirname(__file__))
-from handlers import BotHandlers
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..'))
 
-# Configurar logging
+from handlers import BotHandlers, WAITING_BANKROLL
+
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
@@ -29,35 +36,49 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Punto de entrada del bot"""
-    
-    # Obtener token
     token = os.getenv('TELEGRAM_TOKEN')
-    
+
     if not token:
-        logger.error("❌ ERROR: TELEGRAM_TOKEN no configurado en .env")
-        print("⚠️ Por favor configura TELEGRAM_TOKEN en tu archivo .env")
+        logger.error("ERROR: TELEGRAM_TOKEN no configurado en .env")
+        print("Configura TELEGRAM_TOKEN en tu archivo .env")
         return
-    
-    logger.info("🚀 Iniciando Radar Maestro Bot...")
-    
-    # Crear aplicación
+
+    logger.info("Iniciando Radar Maestro Bot...")
+
+    from src.models.database import init_db
+    init_db()
+
     app = Application.builder().token(token).build()
-    
-    # Registrar handlers de comandos
+
+    # ConversationHandler para /bank (configura bankroll)
+    bank_conv = ConversationHandler(
+        entry_points=[CommandHandler("bank", BotHandlers.cmd_bank)],
+        states={
+            WAITING_BANKROLL: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               BotHandlers.recibir_bankroll)
+            ],
+        },
+        fallbacks=[CommandHandler("start", BotHandlers.cmd_start)],
+        per_message=False,
+    )
+
+    app.add_handler(bank_conv)
+
+    # Comandos simples
     app.add_handler(CommandHandler("start", BotHandlers.cmd_start))
-    app.add_handler(CommandHandler("picks", BotHandlers.cmd_picks))
     app.add_handler(CommandHandler("valor", BotHandlers.cmd_valor))
     app.add_handler(CommandHandler("rendimiento", BotHandlers.cmd_rendimiento))
-    app.add_handler(CommandHandler("bank", BotHandlers.cmd_bank))
-    app.add_handler(CommandHandler("ayuda", BotHandlers.cmd_ayuda))
-    
-    # Registrar handler de callbacks
+
+    # Callbacks de botones inline
     app.add_handler(CallbackQueryHandler(BotHandlers.button_callback))
-    
-    # Iniciar bot
-    logger.info("✅ Bot iniciado correctamente")
-    logger.info("⏳ Esperando mensajes...")
-    
+
+    # Mensajes de texto libre (flujo de apuesta / cambio de bank)
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND, BotHandlers.mensaje_texto
+    ))
+
+    logger.info("Bot iniciado correctamente")
     app.run_polling(
         allowed_updates=['message', 'callback_query'],
         drop_pending_updates=True
@@ -68,8 +89,8 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        logger.info("⏹️ Bot detenido por el usuario")
+        logger.info("Bot detenido por el usuario")
     except Exception as e:
-        logger.error(f"❌ Error fatal: {e}")
+        logger.error("Error fatal: %s", e)
         raise
 
