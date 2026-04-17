@@ -159,7 +159,9 @@ def _stats(telegram_id):
 
 
 def _fmt_pick(pick, bankroll=0.0):
-    cap = picks_service.calcular_capital_recomendado(pick["prob_real"], bankroll)
+    cap = picks_service.calcular_capital_recomendado(
+        pick["prob_real"], bankroll, pick.get("cuota", 2.0)
+    )
     cap_s = "${:,.2f}".format(cap) if bankroll > 0 else "- (configura /bank)"
     hora = pick.get("hora", "")
     hora_s = " ({})".format(hora) if hora else ""
@@ -387,12 +389,12 @@ class BotHandlers:
             texto = "📋 *HISTORIAL*\n\nAún no tienes apuestas registradas."
         else:
             lineas = ["📋 *HISTORIAL DE APUESTAS* _(últimas 10)_\n"]
+            icon_map = {"GANADO": "✅", "PERDIDO": "❌", "PENDIENTE": "⏳"}
             for ap in aps:
-                ic = {"✅": "GANADO", "❌": "PERDIDO", "⏳": "PENDIENTE"}
-                ic = next((k for k, v in ic.items() if v == ap.resultado), "⏳")
+                status_icon = icon_map.get(ap.resultado, "⏳")
                 gs = " (${:+.2f})".format(ap.ganancia) if ap.resultado != "PENDIENTE" else ""
                 lineas.append("{} *{}*\n   ${:.2f} @ {}{}  -  {}".format(
-                    ic, ap.partido, ap.monto, ap.cuota, gs,
+                    status_icon, ap.partido, ap.monto, ap.cuota, gs,
                     ap.fecha_apuesta.strftime("%d/%m %H:%M")
                 ))
             texto = "\n".join(lineas)
@@ -461,7 +463,7 @@ class BotHandlers:
         for pk in picks_c:
             cuota_c *= pk["cuota"]
             prob_c *= pk["prob_real"]
-        cap = picks_service.calcular_capital_recomendado(prob_c, br)
+        cap = picks_service.calcular_capital_recomendado(prob_c, br, cuota_c)
         cap_s = "${:,.2f}".format(cap) if br > 0 else "- (configura /bank)"
         partes = ["🎰 *TU COMBO*\n"]
         for pk in picks_c:
@@ -470,6 +472,7 @@ class BotHandlers:
             "\n💰 Cuota total: *{:.2f}*".format(cuota_c),
             "📊 Prob. combinada: *{:.1%}*".format(prob_c),
             "💵 Capital recomendado: *{}*".format(cap_s),
+            "ℹ️ _La probabilidad combinada asume independencia entre eventos._",
         ]
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Cambiar selección", callback_data="combo:inicio")],
@@ -489,7 +492,9 @@ class BotHandlers:
         if not s["bank_configurado"]:
             await _reply(update, "⚠️ Primero configura tu bankroll:\n`/bank <monto>`")
             return
-        cap = picks_service.calcular_capital_recomendado(pick["prob_real"], s["saldo"])
+        cap = picks_service.calcular_capital_recomendado(
+            pick["prob_real"], s["saldo"], pick.get("cuota", 2.0)
+        )
         await _reply(
             update,
             "📌 *Registrar apuesta*\n\n{}\n{} @ {}\n\n"

@@ -134,15 +134,16 @@ class PicksService:
 
         return picks
 
-    def calcular_capital_recomendado(self, prob_real: float, bankroll: float) -> float:
+    def calcular_capital_recomendado(self, prob_real: float, bankroll: float,
+                                     cuota: float = 2.0) -> float:
         """
-        Kelly Criterion simplificado: f = p - (1-p)/(cuota-1)
-        Usamos un máximo del 5 % del bankroll para protección.
+        Kelly Criterion: f = (prob_real * cuota - 1) / (cuota - 1)
+        Capped at 5% of bankroll for risk protection.
         """
-        if bankroll <= 0:
+        if bankroll <= 0 or cuota <= 1:
             return 0.0
-        porcentaje = min(0.05, prob_real - (1 - prob_real))
-        porcentaje = max(0.01, porcentaje)
+        kelly = (prob_real * cuota - 1) / (cuota - 1)
+        porcentaje = min(0.05, max(0.01, kelly))
         return round(bankroll * porcentaje, 2)
 
 

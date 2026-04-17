@@ -64,7 +64,7 @@ class ExtractorCuotas:
                 },
                 {
                     'id': 'seriea_2', 'deporte': 'Fútbol', 'liga': liga,
-                    'local': 'RC Lens', 'visitante': 'Toulouse',
+                    'local': 'AC Milan', 'visitante': 'Udinese',
                     'fecha': '2026-04-18', 'hora': '19:00',
                     'mercados': {'1': 1.48, 'X': 3.80, '2': 6.50},
                 },

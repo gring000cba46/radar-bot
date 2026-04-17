@@ -27,9 +27,8 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(String, unique=True, index=True)
     nombre = Column(String)
-    # bank_actual / bank_inicial as required by specs
-    saldo = Column(Float, default=0.0)           # bank_actual
-    saldo_inicial = Column(Float, default=0.0)   # bank_inicial
+    saldo = Column(Float, default=0.0)          # bank_actual (saldo corriente)
+    saldo_inicial = Column(Float, default=0.0)  # bank_inicial (capital configurado)
     plan = Column(String, default="gratis")
     activo = Column(Boolean, default=True)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
