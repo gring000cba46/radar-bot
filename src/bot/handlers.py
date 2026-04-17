@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 DISCLAIMER = "\n\n⚠️ _Apuesta solo lo que estés dispuesto a perder._"
 WAITING_BANKROLL = 1
 WAITING_BET_AMOUNT = 2
+MAX_COMBO_SIZE = 5  # Maximum picks allowed in a combo
 
 
 def _menu_principal():
@@ -425,7 +426,7 @@ class BotHandlers:
     async def _show_combo_selector(update, context):
         todos = context.user_data.get("combo_picks", [])
         sel = context.user_data.get("combo_sel", [])
-        partes = ["🎰 *ARMAR COMBO* _(máx. 5 picks)_\n",
+        partes = ["🎰 *ARMAR COMBO* _(máx. {} picks)_\n".format(MAX_COMBO_SIZE),
                   "Selecciona los picks que quieres combinar:\n"]
         for i, pk in enumerate(todos[:10]):
             ch = "✅" if i in sel else "⬜"
@@ -586,7 +587,7 @@ class BotHandlers:
             sel = context.user_data.get("combo_sel", [])
             if idx in sel:
                 sel.remove(idx)
-            elif len(sel) < 5:
+            elif len(sel) < MAX_COMBO_SIZE:
                 sel.append(idx)
             context.user_data["combo_sel"] = sel
             await BotHandlers._show_combo_selector(update, context)
