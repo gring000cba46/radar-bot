@@ -1,38 +1,41 @@
 #!/bin/bash
 
-echo "🚀 Iniciando Radar Maestro..."
+echo "🎯 Iniciando Radar Maestro..."
+echo "=============================="
 echo ""
 
 # Activar entorno virtual
-source venv/bin/activate
-
-# Crear directorios si no existen
-mkdir -p data logs
-
-# Verificar .env
-if [ ! -f .env ]; then
-    echo "❌ ERROR: Archivo .env no encontrado"
-    echo "Copia .env.example a .env y configura tus datos"
+if [ ! -d "venv" ]; then
+    echo "❌ Entorno virtual no existe. Ejecuta: ./install.sh"
     exit 1
 fi
 
-# Iniciar bot y API en paralelo
-echo "🤖 Iniciando Bot de Telegram..."
+source venv/bin/activate
+
+# Crear logs si no existe
+mkdir -p logs
+
+# Iniciar en background
+echo "🤖 Iniciando Bot..."
 python3 src/bot/main.py &
 BOT_PID=$!
 
-echo "🌐 Iniciando API Flask..."
+sleep 2
+
+echo "🌐 Iniciando API..."
 python3 src/api/app.py &
 API_PID=$!
 
 echo ""
-echo "✅ Sistema iniciado!"
-echo "  Bot PID: $BOT_PID"
-echo "  API PID: $API_PID"
+echo "✅ Radar Maestro ejecutándose!"
 echo ""
-echo "Presiona Ctrl+C para detener"
+echo "📱 Bot: Busca tu bot en Telegram"
+echo "🌐 API: http://localhost:5000/api/health"
+echo "📊 Dashboard: http://localhost:5000"
+echo ""
+echo "Para detener: presiona Ctrl+C"
 echo ""
 
-# Esperar a que los procesos terminen
-wait
+# Esperar a que se ejecuten
+wait $BOT_PID $API_PID
 
