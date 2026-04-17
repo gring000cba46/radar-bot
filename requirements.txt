@@ -1,11 +1,27 @@
-python-telegram-bot==20.1
-flask==3.0.0
-flask-cors==4.0.0
-sqlalchemy==2.0.23
+# Bot de Telegram
+python-telegram-bot==20.3
 python-dotenv==1.0.0
+
+# API Web
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# Base de datos
+SQLAlchemy==2.0.23
+
+# Gráficos y visualización
+plotly==5.18.0
+pandas==2.1.3
+
+# Utilidades
 requests==2.31.0
-numpy==1.24.3
-pandas==2.0.3
-matplotlib==3.7.2
-plotly==5.17.0
-gunicorn==21.2.0
+python-dateutil==2.8.2
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Development
+black==23.12.0
+flake8==6.1.0
+

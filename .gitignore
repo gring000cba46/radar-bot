@@ -1,8 +1,7 @@
-# Environment
-.env
-.venv
-env/
+# Virtual Environment
 venv/
+ENV/
+env/
 
 # Python
 __pycache__/
@@ -32,17 +31,29 @@ wheels/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-data/
+# Environment
+.env
+.env.local
+.env.*.local
 
 # Logs
-*.log
 logs/
+*.log
+
+# Data
+data/*.db
+data/*.sqlite
+*.db
+
+# Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporal
+*.tmp
+*.temp
+.cache/
+
